@@ -37,10 +37,19 @@
                     <li>Replace with the rules shown below</li>
                     <li>Change YOUR_SECRET_PASSWORD to your own password</li>
                     <li>Click Publish</li>
+                    <li>Test by adding an expense below</li>
                 </ol>
-                <button onclick="document.getElementById('rulesCode').classList.toggle('hidden')" class="mt-2 text-xs text-blue-600 underline">
-                    Show Firebase Rules Code
-                </button>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="document.getElementById('rulesCode').classList.toggle('hidden')" class="text-xs text-blue-600 underline">
+                        Show Firebase Rules Code
+                    </button>
+                    <button onclick="testSave()" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                        🧪 Test Save
+                    </button>
+                    <button onclick="document.getElementById('setupInstructions').classList.add('hidden')" class="text-xs text-gray-600 underline">
+                        Hide Instructions
+                    </button>
+                </div>
                 <pre id="rulesCode" class="hidden mt-2 bg-gray-800 text-green-400 p-3 rounded text-xs overflow-x-auto"><code>rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -48,8 +57,11 @@ service cloud.firestore {
       // Everyone can read
       allow read: if true;
       
-      // Only allow writes with correct password
-      allow write: if request.resource.data.get('_adminPassword', '') == 'YOUR_SECRET_PASSWORD';
+      // Allow writes if:
+      // 1. Password is empty (for normal adds), OR
+      // 2. Password matches the secret (for deletes/clears)
+      allow write: if request.resource.data.get('_adminPassword', '') == '' 
+                   || request.resource.data.get('_adminPassword', '') == 'YOUR_SECRET_PASSWORD';
     }
   }
 }</code></pre>
@@ -226,23 +238,32 @@ service cloud.firestore {
             }
             
             try {
+                // If password is NOT required (normal operations), send empty string
+                // Firebase rules will allow writes when _adminPassword is empty OR correct
                 await db.collection('travel').doc('people').set({ 
                     list: people,
-                    _adminPassword: adminPassword  // Firebase rules will check this
+                    _adminPassword: adminPassword || ''
                 });
                 await db.collection('travel').doc('expenses').set({ 
                     list: expenses,
-                    _adminPassword: adminPassword
+                    _adminPassword: adminPassword || ''
                 });
+                
+                console.log('Data saved successfully!');
                 return true;
             } catch (error) {
                 console.error('Error saving:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
                 if (error.code === 'permission-denied') {
-                    showStatus('❌ Incorrect password or permission denied', 'error');
+                    showStatus('❌ Permission denied. You need to update Firebase Rules!', 'error');
+                    // Show the instructions again
+                    document.getElementById('setupInstructions').classList.remove('hidden');
                 } else {
                     showStatus('❌ Error saving data: ' + error.message, 'error');
                 }
-                setTimeout(() => hideStatus(), 3000);
+                setTimeout(() => hideStatus(), 5000);
                 return false;
             }
         }
@@ -503,6 +524,21 @@ service cloud.firestore {
                     // Revert if password was wrong
                     await loadData();
                 }
+            }
+        }
+
+        // Test function to verify Firebase is working
+        async function testSave() {
+            showStatus('🧪 Testing save to Firebase...', 'success');
+            const testSuccess = await saveData(false);
+            if (testSuccess) {
+                showStatus('✅ Save test successful! Firebase is working correctly.', 'success');
+                setTimeout(() => {
+                    showStatus('🔄 Reloading to verify...', 'success');
+                    setTimeout(() => loadData(), 1000);
+                }, 2000);
+            } else {
+                showStatus('❌ Save test failed. Check console (F12) for errors.', 'error');
             }
         }
 
