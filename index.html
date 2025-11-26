@@ -27,6 +27,34 @@
                 </div>
             </div>
 
+            <!-- Setup Instructions -->
+            <div id="setupInstructions" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800 mb-2">
+                    <strong>🔒 Secure Setup Instructions:</strong>
+                </p>
+                <ol class="text-xs text-blue-700 ml-4 list-decimal space-y-1">
+                    <li>Go to Firebase Console → Firestore Database → Rules</li>
+                    <li>Replace with the rules shown below</li>
+                    <li>Change YOUR_SECRET_PASSWORD to your own password</li>
+                    <li>Click Publish</li>
+                </ol>
+                <button onclick="document.getElementById('rulesCode').classList.toggle('hidden')" class="mt-2 text-xs text-blue-600 underline">
+                    Show Firebase Rules Code
+                </button>
+                <pre id="rulesCode" class="hidden mt-2 bg-gray-800 text-green-400 p-3 rounded text-xs overflow-x-auto"><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /travel/{document} {
+      // Everyone can read
+      allow read: if true;
+      
+      // Only allow writes with correct password
+      allow write: if request.resource.data.get('_adminPassword', '') == 'YOUR_SECRET_PASSWORD';
+    }
+  }
+}</code></pre>
+            </div>
+
             <!-- Status -->
             <div id="status" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 hidden">
                 <p class="text-sm text-blue-800"></p>
@@ -158,8 +186,22 @@
                 const peopleDoc = await db.collection('travel').doc('people').get();
                 const expensesDoc = await db.collection('travel').doc('expenses').get();
                 
-                people = peopleDoc.exists ? peopleDoc.data().list : ['Person A', 'Person B', 'Person C', 'Person D'];
-                expenses = expensesDoc.exists ? expensesDoc.data().list : [];
+                if (peopleDoc.exists) {
+                    const data = peopleDoc.data();
+                    // Remove the _adminPassword field before using
+                    delete data._adminPassword;
+                    people = data.list || ['Person A', 'Person B', 'Person C', 'Person D'];
+                } else {
+                    people = ['Person A', 'Person B', 'Person C', 'Person D'];
+                }
+                
+                if (expensesDoc.exists) {
+                    const data = expensesDoc.data();
+                    delete data._adminPassword;
+                    expenses = data.list || [];
+                } else {
+                    expenses = [];
+                }
                 
                 render();
             } catch (error) {
@@ -170,13 +212,38 @@
             }
         }
 
-        async function saveData() {
+        async function saveData(requirePassword = false) {
+            let adminPassword = '';
+            
+            // Ask for password if required (for delete/clear operations)
+            if (requirePassword) {
+                adminPassword = prompt('🔒 Enter admin password to proceed:');
+                if (!adminPassword) {
+                    showStatus('❌ Password required', 'error');
+                    setTimeout(() => hideStatus(), 2000);
+                    return false;
+                }
+            }
+            
             try {
-                await db.collection('travel').doc('people').set({ list: people });
-                await db.collection('travel').doc('expenses').set({ list: expenses });
+                await db.collection('travel').doc('people').set({ 
+                    list: people,
+                    _adminPassword: adminPassword  // Firebase rules will check this
+                });
+                await db.collection('travel').doc('expenses').set({ 
+                    list: expenses,
+                    _adminPassword: adminPassword
+                });
+                return true;
             } catch (error) {
                 console.error('Error saving:', error);
-                showStatus('❌ Error saving data', 'error');
+                if (error.code === 'permission-denied') {
+                    showStatus('❌ Incorrect password or permission denied', 'error');
+                } else {
+                    showStatus('❌ Error saving data: ' + error.message, 'error');
+                }
+                setTimeout(() => hideStatus(), 3000);
+                return false;
             }
         }
 
@@ -196,24 +263,33 @@
             document.getElementById('addPersonForm').classList.toggle('hidden');
         }
 
-        function addPerson() {
+        async function addPerson() {
             const input = document.getElementById('newPersonInput');
             const name = input.value.trim();
             if (name && !people.includes(name)) {
                 people.push(name);
                 input.value = '';
                 toggleAddPerson();
-                saveData();
+                await saveData(false);  // No password needed for normal operations
                 render();
             }
         }
 
-        function removePerson(name) {
+        async function removePerson(name) {
             if (people.length > 2) {
-                people = people.filter(p => p !== name);
-                expenses = expenses.filter(e => e.paidBy !== name && !e.splitAmong.includes(name));
-                saveData();
-                render();
+                if (confirm(`Remove ${name}? This will also remove their expenses.`)) {
+                    people = people.filter(p => p !== name);
+                    expenses = expenses.filter(e => e.paidBy !== name && !e.splitAmong.includes(name));
+                    const success = await saveData(true);  // Requires password
+                    if (success) {
+                        render();
+                        showStatus('✅ Person removed', 'success');
+                        setTimeout(() => hideStatus(), 2000);
+                    } else {
+                        // Revert changes if password was wrong
+                        await loadData();
+                    }
+                }
             }
         }
 
@@ -226,7 +302,7 @@
             renderSplitButtons();
         }
 
-        function addExpense() {
+        async function addExpense() {
             const desc = document.getElementById('description').value.trim();
             const amt = parseFloat(document.getElementById('amount').value);
             const payer = document.getElementById('paidBy').value;
@@ -246,17 +322,26 @@
                 document.getElementById('paidBy').value = '';
                 splitAmong = [];
 
-                saveData();
+                await saveData(false);  // No password needed for adding expenses
                 render();
                 showStatus('✅ Expense added!', 'success');
                 setTimeout(() => hideStatus(), 2000);
             }
         }
 
-        function deleteExpense(id) {
-            expenses = expenses.filter(e => e.id !== id);
-            saveData();
-            render();
+        async function deleteExpense(id) {
+            if (confirm('Delete this expense?')) {
+                expenses = expenses.filter(e => e.id !== id);
+                const success = await saveData(true);  // Requires password
+                if (success) {
+                    render();
+                    showStatus('✅ Expense deleted', 'success');
+                    setTimeout(() => hideStatus(), 2000);
+                } else {
+                    // Revert if password was wrong
+                    await loadData();
+                }
+            }
         }
 
         function calculateBalances() {
@@ -327,7 +412,7 @@
             document.getElementById('peopleList').innerHTML = people.map(p => `
                 <div class="flex items-center gap-2 bg-indigo-100 px-3 py-2 rounded-lg">
                     <span class="text-indigo-800 font-medium">${p}</span>
-                    ${people.length > 2 ? `<button onclick="removePerson('${p}')" class="text-red-600 hover:text-red-800">✕</button>` : ''}
+                    ${people.length > 2 ? `<button onclick="removePerson('${p}')" class="text-red-600 hover:text-red-800" title="Remove (requires password)">✕</button>` : ''}
                 </div>
             `).join('');
 
@@ -355,7 +440,7 @@
                                 $${exp.amount.toFixed(2)} paid by <span class="font-medium">${exp.paidBy}</span> → split among ${exp.splitAmong.join(', ')}
                             </div>
                         </div>
-                        <button onclick="deleteExpense(${exp.id})" class="text-red-600 hover:text-red-800 ml-4">🗑️</button>
+                        <button onclick="deleteExpense(${exp.id})" class="text-red-600 hover:text-red-800 ml-4" title="Delete (requires password)">🗑️</button>
                     </div>
                 `).join('');
 
@@ -406,13 +491,18 @@
         }
 
         async function clearAll() {
-            if (confirm('⚠️ Clear all data for everyone?')) {
+            if (confirm('⚠️ This will DELETE ALL data for everyone! Are you absolutely sure?')) {
                 people = ['Person A', 'Person B', 'Person C', 'Person D'];
                 expenses = [];
-                await saveData();
-                render();
-                showStatus('✅ Data cleared!', 'success');
-                setTimeout(() => hideStatus(), 2000);
+                const success = await saveData(true);  // Requires password
+                if (success) {
+                    render();
+                    showStatus('✅ All data cleared!', 'success');
+                    setTimeout(() => hideStatus(), 2000);
+                } else {
+                    // Revert if password was wrong
+                    await loadData();
+                }
             }
         }
 
