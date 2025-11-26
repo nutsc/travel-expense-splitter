@@ -27,20 +27,6 @@
                 </div>
             </div>
 
-            <!-- Firebase Config Notice -->
-            <div id="configNotice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <p class="text-sm text-yellow-800 mb-3">
-                    <strong>⚠️ Firebase Setup Required</strong><br>
-                    Replace the Firebase config below with your own credentials:
-                </p>
-                <ol class="text-xs text-yellow-700 ml-4 list-decimal space-y-1">
-                    <li>Go to <a href="https://firebase.google.com" target="_blank" class="underline">firebase.google.com</a></li>
-                    <li>Create a project → Enable Firestore Database</li>
-                    <li>Project Settings → Your apps → Web app → Copy config</li>
-                    <li>Replace the firebaseConfig in the code (line ~280)</li>
-                </ol>
-            </div>
-
             <!-- Status -->
             <div id="status" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 hidden">
                 <p class="text-sm text-blue-800"></p>
@@ -139,23 +125,15 @@
     </div>
 
     <script>
-      // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDIBYMMrMd3tiuMxSujCk0-K-fyty-aph0",
-  authDomain: "travel-expenses-b24d9.firebaseapp.com",
-  projectId: "travel-expenses-b24d9",
-  storageBucket: "travel-expenses-b24d9.firebasestorage.app",
-  messagingSenderId: "393290737674",
-  appId: "1:393290737674:web:217d0ba7fd8faaec60d7f3"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIBYMMrMd3tiuMxSujCk0-K-fyty-aph0",
+            authDomain: "travel-expenses-b24d9.firebaseapp.com",
+            projectId: "travel-expenses-b24d9",
+            storageBucket: "travel-expenses-b24d9.firebasestorage.app",
+            messagingSenderId: "393290737674",
+            appId: "1:393290737674:web:217d0ba7fd8faaec60d7f3"
+        };
 
         // Initialize Firebase
         let db;
@@ -165,7 +143,8 @@ const app = initializeApp(firebaseConfig);
             showStatus('✅ Connected to Firebase!', 'success');
             setTimeout(() => hideStatus(), 3000);
         } catch (error) {
-            showStatus('❌ Firebase not configured. Please add your config.', 'error');
+            console.error('Firebase initialization error:', error);
+            showStatus('❌ Firebase connection error: ' + error.message, 'error');
         }
 
         // State
