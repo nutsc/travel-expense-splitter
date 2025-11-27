@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <!-- Main App (Hidden until login) -->
+    <!-- Main App -->
     <div id="mainApp" class="hidden max-w-4xl mx-auto p-4">
         <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
             <!-- Header -->
@@ -109,9 +109,9 @@
                 <div id="peopleList" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- Add Expense Form -->
+            <!-- Add/Edit Expense Form -->
             <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 class="font-semibold text-gray-700 mb-3">Add New Expense</h3>
+                <h3 class="font-semibold text-gray-700 mb-3" id="formTitle">Add New Expense</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <input 
@@ -137,13 +137,57 @@
                 </div>
 
                 <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Split type:</label>
+                    <div class="flex gap-4 mb-3">
+                        <label class="flex items-center">
+                            <input type="radio" name="splitType" value="equal" checked onchange="toggleSplitType()" class="mr-2">
+                            <span class="text-sm">Split Equally</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="splitType" value="custom" onchange="toggleSplitType()" class="mr-2">
+                            <span class="text-sm">Custom Amounts</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Equal Split -->
+                <div id="equalSplitSection" class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Split among:</label>
                     <div id="splitButtons" class="flex flex-wrap gap-2"></div>
                 </div>
 
-                <button onclick="addExpense()" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                    + Add Expense
-                </button>
+                <!-- Custom Split -->
+                <div id="customSplitSection" class="mb-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom amounts for each person:</label>
+                    <div id="customAmounts" class="space-y-2"></div>
+                    <p class="text-xs text-gray-500 mt-2">Total must equal the expense amount</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="saveExpense()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition" id="saveButton">
+                        + Add Expense
+                    </button>
+                    <button onclick="cancelEdit()" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition hidden" id="cancelButton">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-6" id="filterSection">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <label class="text-sm font-medium text-gray-700">Filter by date:</label>
+                    <input 
+                        type="date" 
+                        id="filterDate" 
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        onchange="applyDateFilter()"
+                    />
+                    <button onclick="clearDateFilter()" class="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-sm">
+                        Clear Filter
+                    </button>
+                    <span id="filterStatus" class="text-sm text-gray-600"></span>
+                </div>
             </div>
 
             <!-- Expenses List -->
@@ -186,7 +230,6 @@
     </div>
 
     <script>
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDIBYMMrMd3tiuMxSujCk0-K-fyty-aph0",
             authDomain: "travel-expenses-b24d9.firebaseapp.com",
@@ -196,7 +239,6 @@
             appId: "1:393290737674:web:217d0ba7fd8faaec60d7f3"
         };
 
-        // Initialize Firebase
         let db;
         try {
             firebase.initializeApp(firebaseConfig);
@@ -212,19 +254,17 @@
         let currentCurrency = 'USD';
         let currencySymbol = '$';
         let currentTimezone = 'America/New_York';
+        let editingExpenseId = null;
+        let filteredDate = null;
 
-        // Check if user is already logged in
         if (sessionStorage.getItem('loggedIn') === 'true') {
             showMainApp();
         }
 
-        // Login function
         async function checkLogin() {
             const password = document.getElementById('loginPassword').value;
-            
             try {
                 const accessDoc = await db.collection('travel').doc('access').get();
-                
                 if (accessDoc.exists && accessDoc.data().password === password) {
                     sessionStorage.setItem('loggedIn', 'true');
                     showMainApp();
@@ -255,12 +295,9 @@
         function changeCurrency() {
             const select = document.getElementById('currencySelect');
             const option = select.options[select.selectedIndex];
-            
             currentCurrency = select.value;
             currencySymbol = option.getAttribute('data-symbol');
             currentTimezone = option.getAttribute('data-timezone');
-            
-            // Save currency preference
             saveCurrencyPreference();
             render();
         }
@@ -286,8 +323,6 @@
                     currentCurrency = data.currency || 'USD';
                     currencySymbol = data.currencySymbol || '$';
                     currentTimezone = data.timezone || 'America/New_York';
-                    
-                    // Update select dropdown
                     document.getElementById('currencySelect').value = currentCurrency;
                 }
             } catch (error) {
@@ -311,10 +346,38 @@
             }
         }
 
+        function getDateOnly(isoDate) {
+            try {
+                const date = new Date(isoDate);
+                return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function applyDateFilter() {
+            filteredDate = document.getElementById('filterDate').value;
+            if (filteredDate) {
+                document.getElementById('filterStatus').textContent = `Showing expenses for ${filteredDate}`;
+            }
+            render();
+        }
+
+        function clearDateFilter() {
+            filteredDate = null;
+            document.getElementById('filterDate').value = '';
+            document.getElementById('filterStatus').textContent = '';
+            render();
+        }
+
+        function getFilteredExpenses() {
+            if (!filteredDate) return expenses;
+            return expenses.filter(exp => getDateOnly(exp.date) === filteredDate);
+        }
+
         async function loadData() {
             try {
                 await loadCurrencyPreference();
-                
                 const peopleDoc = await db.collection('travel').doc('people').get();
                 const expensesDoc = await db.collection('travel').doc('expenses').get();
                 
@@ -345,7 +408,6 @@
 
         async function saveData(requirePassword = false) {
             let adminPassword = '';
-            
             if (requirePassword) {
                 adminPassword = prompt('🔒 Enter admin password to proceed:');
                 if (!adminPassword) {
@@ -364,12 +426,9 @@
                     list: expenses,
                     _adminPassword: adminPassword || ''
                 });
-                
-                console.log('Data saved successfully!');
                 return true;
             } catch (error) {
                 console.error('Error saving:', error);
-                
                 if (error.code === 'permission-denied') {
                     showStatus('❌ Permission denied. Check Firebase Rules!', 'error');
                 } else {
@@ -425,6 +484,32 @@
             }
         }
 
+        function toggleSplitType() {
+            const isEqual = document.querySelector('input[name="splitType"]:checked').value === 'equal';
+            document.getElementById('equalSplitSection').classList.toggle('hidden', !isEqual);
+            document.getElementById('customSplitSection').classList.toggle('hidden', isEqual);
+            
+            if (!isEqual) {
+                renderCustomAmounts();
+            }
+        }
+
+        function renderCustomAmounts() {
+            const container = document.getElementById('customAmounts');
+            container.innerHTML = people.map(p => `
+                <div class="flex items-center gap-2">
+                    <label class="w-32 text-sm font-medium text-gray-700">${p}:</label>
+                    <input 
+                        type="number" 
+                        id="custom_${p}" 
+                        placeholder="0.00"
+                        step="0.01"
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
+            `).join('');
+        }
+
         function toggleSplit(person) {
             if (splitAmong.includes(person)) {
                 splitAmong = splitAmong.filter(p => p !== person);
@@ -434,34 +519,124 @@
             renderSplitButtons();
         }
 
-        async function addExpense() {
+        function editExpense(id) {
+            const expense = expenses.find(e => e.id === id);
+            if (!expense) return;
+
+            editingExpenseId = id;
+            document.getElementById('formTitle').textContent = 'Edit Expense';
+            document.getElementById('description').value = expense.description;
+            document.getElementById('amount').value = expense.amount;
+            document.getElementById('paidBy').value = expense.paidBy;
+            document.getElementById('saveButton').textContent = '💾 Save Changes';
+            document.getElementById('cancelButton').classList.remove('hidden');
+
+            if (expense.customAmounts) {
+                document.querySelector('input[name="splitType"][value="custom"]').checked = true;
+                toggleSplitType();
+                Object.entries(expense.customAmounts).forEach(([person, amount]) => {
+                    const input = document.getElementById(`custom_${person}`);
+                    if (input) input.value = amount;
+                });
+            } else {
+                document.querySelector('input[name="splitType"][value="equal"]').checked = true;
+                toggleSplitType();
+                splitAmong = [...expense.splitAmong];
+                renderSplitButtons();
+            }
+
+            // Scroll to form
+            document.getElementById('formTitle').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingExpenseId = null;
+            document.getElementById('formTitle').textContent = 'Add New Expense';
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('paidBy').value = '';
+            document.getElementById('saveButton').textContent = '+ Add Expense';
+            document.getElementById('cancelButton').classList.add('hidden');
+            splitAmong = [];
+            document.querySelector('input[name="splitType"][value="equal"]').checked = true;
+            toggleSplitType();
+            renderSplitButtons();
+        }
+
+        async function saveExpense() {
             const desc = document.getElementById('description').value.trim();
             const amt = parseFloat(document.getElementById('amount').value);
             const payer = document.getElementById('paidBy').value;
+            const isEqual = document.querySelector('input[name="splitType"]:checked').value === 'equal';
 
-            if (desc && amt && payer && splitAmong.length > 0) {
-                expenses.push({
-                    id: Date.now(),
-                    description: desc,
-                    amount: amt,
-                    paidBy: payer,
-                    splitAmong: [...splitAmong],
-                    date: new Date().toISOString(),
-                    timezone: currentTimezone,
-                    currency: currentCurrency,
-                    currencySymbol: currencySymbol
+            if (!desc || !amt || !payer) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            let expenseData = {
+                description: desc,
+                amount: amt,
+                paidBy: payer,
+                currency: currentCurrency,
+                currencySymbol: currencySymbol,
+                timezone: currentTimezone
+            };
+
+            if (isEqual) {
+                if (splitAmong.length === 0) {
+                    alert('Please select at least one person to split the expense');
+                    return;
+                }
+                expenseData.splitAmong = [...splitAmong];
+                expenseData.customAmounts = null;
+            } else {
+                const customAmounts = {};
+                let total = 0;
+                people.forEach(p => {
+                    const input = document.getElementById(`custom_${p}`);
+                    const value = parseFloat(input.value) || 0;
+                    if (value > 0) {
+                        customAmounts[p] = value;
+                        total += value;
+                    }
                 });
 
-                document.getElementById('description').value = '';
-                document.getElementById('amount').value = '';
-                document.getElementById('paidBy').value = '';
-                splitAmong = [];
+                if (Math.abs(total - amt) > 0.01) {
+                    alert(`Custom amounts (${currencySymbol}${total.toFixed(2)}) must equal expense amount (${currencySymbol}${amt.toFixed(2)})`);
+                    return;
+                }
 
-                await saveData(false);
-                render();
-                showStatus('✅ Expense added!', 'success');
-                setTimeout(() => hideStatus(), 2000);
+                if (Object.keys(customAmounts).length === 0) {
+                    alert('Please enter custom amounts for at least one person');
+                    return;
+                }
+
+                expenseData.splitAmong = Object.keys(customAmounts);
+                expenseData.customAmounts = customAmounts;
             }
+
+            if (editingExpenseId) {
+                // Update existing expense
+                const index = expenses.findIndex(e => e.id === editingExpenseId);
+                if (index !== -1) {
+                    expenses[index] = {
+                        ...expenses[index],
+                        ...expenseData
+                    };
+                }
+            } else {
+                // Add new expense
+                expenseData.id = Date.now();
+                expenseData.date = new Date().toISOString();
+                expenses.push(expenseData);
+            }
+
+            await saveData(false);
+            render();
+            showStatus(editingExpenseId ? '✅ Expense updated!' : '✅ Expense added!', 'success');
+            setTimeout(() => hideStatus(), 2000);
+            cancelEdit();
         }
 
         async function deleteExpense(id) {
@@ -478,35 +653,50 @@
             }
         }
 
-        function calculateBalances() {
+        function calculateBalances(expensesList = expenses) {
             const balances = {};
             people.forEach(p => balances[p] = 0);
 
-            expenses.forEach(exp => {
-                const share = exp.amount / exp.splitAmong.length;
+            expensesList.forEach(exp => {
                 balances[exp.paidBy] += exp.amount;
-                exp.splitAmong.forEach(p => balances[p] -= share);
+
+                if (exp.customAmounts) {
+                    Object.entries(exp.customAmounts).forEach(([person, amount]) => {
+                        balances[person] -= amount;
+                    });
+                } else {
+                    const share = exp.amount / exp.splitAmong.length;
+                    exp.splitAmong.forEach(p => {
+                        balances[p] -= share;
+                    });
+                }
             });
 
             return balances;
         }
 
-        function calculateIndividualSpending() {
+        function calculateIndividualSpending(expensesList = expenses) {
             const spending = {};
             people.forEach(p => spending[p] = 0);
 
-            expenses.forEach(exp => {
-                const share = exp.amount / exp.splitAmong.length;
-                exp.splitAmong.forEach(p => {
-                    spending[p] += share;
-                });
+            expensesList.forEach(exp => {
+                if (exp.customAmounts) {
+                    Object.entries(exp.customAmounts).forEach(([person, amount]) => {
+                        spending[person] += amount;
+                    });
+                } else {
+                    const share = exp.amount / exp.splitAmong.length;
+                    exp.splitAmong.forEach(p => {
+                        spending[p] += share;
+                    });
+                }
             });
 
             return spending;
         }
 
-        function calculateSettlements() {
-            const balances = calculateBalances();
+        function calculateSettlements(expensesList = expenses) {
+            const balances = calculateBalances(expensesList);
             const settlements = [];
             
             const debtors = Object.entries(balances)
@@ -568,31 +758,51 @@
 
             renderSplitButtons();
 
+            const displayExpenses = getFilteredExpenses();
+
             if (expenses.length > 0) {
                 document.getElementById('emptyState').classList.add('hidden');
                 document.getElementById('expensesSection').classList.remove('hidden');
                 document.getElementById('summarySection').classList.remove('hidden');
+                document.getElementById('filterSection').classList.remove('hidden');
 
-                const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+                const total = displayExpenses.reduce((sum, e) => sum + e.amount, 0);
                 document.getElementById('totalExpenses').textContent = `Total: ${currencySymbol}${total.toFixed(2)} ${currentCurrency}`;
 
-                document.getElementById('expensesList').innerHTML = expenses.map(exp => `
-                    <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
-                        <div class="flex-1">
-                            <div class="font-medium text-gray-800">${exp.description}</div>
-                            <div class="text-sm text-gray-600">
-                                ${exp.currencySymbol || currencySymbol}${exp.amount.toFixed(2)} ${exp.currency || currentCurrency} paid by <span class="font-medium">${exp.paidBy}</span> → split among ${exp.splitAmong.join(', ')}
+                document.getElementById('expensesList').innerHTML = displayExpenses.map(exp => {
+                    let splitInfo = '';
+                    if (exp.customAmounts) {
+                        splitInfo = Object.entries(exp.customAmounts)
+                            .map(([person, amount]) => `${person}: ${exp.currencySymbol || currencySymbol}${amount.toFixed(2)}`)
+                            .join(', ');
+                    } else {
+                        const share = exp.amount / exp.splitAmong.length;
+                        splitInfo = `${exp.splitAmong.join(', ')} (${exp.currencySymbol || currencySymbol}${share.toFixed(2)} each)`;
+                    }
+
+                    return `
+                        <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-800">${exp.description}</div>
+                                <div class="text-sm text-gray-600">
+                                    ${exp.currencySymbol || currencySymbol}${exp.amount.toFixed(2)} ${exp.currency || currentCurrency} paid by <span class="font-medium">${exp.paidBy}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Split: ${splitInfo}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    📅 ${formatDateTime(exp.date)}
+                                </div>
                             </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                📅 ${formatDateTime(exp.date)}
+                            <div class="flex gap-2 ml-4">
+                                <button onclick="editExpense(${exp.id})" class="text-blue-600 hover:text-blue-800" title="Edit">✏️</button>
+                                <button onclick="deleteExpense(${exp.id})" class="text-red-600 hover:text-red-800" title="Delete (requires password)">🗑️</button>
                             </div>
                         </div>
-                        <button onclick="deleteExpense(${exp.id})" class="text-red-600 hover:text-red-800 ml-4" title="Delete (requires password)">🗑️</button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
 
-                // Individual Spending
-                const spending = calculateIndividualSpending();
+                const spending = calculateIndividualSpending(displayExpenses);
                 document.getElementById('spendingList').innerHTML = people.map(p => `
                     <div class="flex justify-between items-center">
                         <span class="font-medium text-gray-800">${p}</span>
@@ -602,8 +812,7 @@
                     </div>
                 `).join('');
 
-                // Balances
-                const balances = calculateBalances();
+                const balances = calculateBalances(displayExpenses);
                 document.getElementById('balancesList').innerHTML = people.map(p => `
                     <div class="flex justify-between items-center">
                         <span class="font-medium text-gray-800">${p}</span>
@@ -613,8 +822,7 @@
                     </div>
                 `).join('');
 
-                // Settlements
-                const settlements = calculateSettlements();
+                const settlements = calculateSettlements(displayExpenses);
                 document.getElementById('settlementsList').innerHTML = settlements.length > 0 
                     ? settlements.map(s => `
                         <div class="flex items-center gap-2 text-gray-800">
@@ -628,6 +836,7 @@
                 document.getElementById('emptyState').classList.remove('hidden');
                 document.getElementById('expensesSection').classList.add('hidden');
                 document.getElementById('summarySection').classList.add('hidden');
+                document.getElementById('filterSection').classList.add('hidden');
             }
         }
 
