@@ -7,24 +7,42 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <style>
+        body {
+            transition: background-color 0.3s ease;
+        }
+        .dark-mode {
+            background: linear-gradient(to bottom right, #1e293b, #0f172a);
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen" id="mainBody">
     <!-- Login Screen -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md w-full transition-all">
+            <!-- Dark Mode Toggle -->
+            <div class="flex justify-end mb-4">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all" title="Toggle Dark Mode">
+                    <span id="darkModeIcon">🌙</span>
+                </button>
+            </div>
+            
             <div class="text-center mb-6">
                 <div class="text-6xl mb-4">🔒</div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Travel Expense Splitter</h1>
-                <p class="text-gray-600">Enter password to access</p>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Travel Expense Splitter</h1>
+                <p class="text-gray-600 dark:text-gray-300">Enter password to access</p>
             </div>
             
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Access Password:</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Access Password:</label>
                 <input 
                     type="password" 
                     id="loginPassword" 
                     placeholder="Enter password"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     onkeypress="if(event.key==='Enter') checkLogin()"
                 />
             </div>
@@ -36,20 +54,23 @@
                 🔓 Access Website
             </button>
             
-            <div id="loginError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p class="text-sm text-red-800">❌ Incorrect password. Please try again.</p>
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg transition-all">
+                <p class="text-sm text-red-800 dark:text-red-300">❌ Incorrect password. Please try again.</p>
             </div>
         </div>
     </div>
 
     <!-- Main App -->
     <div id="mainApp" class="hidden max-w-4xl mx-auto p-4">
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 transition-all">
             <!-- Header -->
             <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
-                <h1 class="text-3xl font-bold text-gray-800">💰 Travel Expense Splitter</h1>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">💰 Travel Expense Splitter</h1>
                 <div class="flex gap-2 flex-wrap">
-                    <select id="currencySelect" onchange="changeCurrency()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="toggleDarkMode()" class="px-3 py-2 bg-gray-700 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-500 transition text-sm" title="Toggle Dark Mode">
+                        <span id="darkModeIconMain">🌙</span>
+                    </button>
+                    <select id="currencySelect" onchange="changeCurrency()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all">
                         <option value="USD" data-symbol="$" data-timezone="America/New_York">🇺🇸 USD ($)</option>
                         <option value="EUR" data-symbol="€" data-timezone="Europe/Paris">🇪🇺 EUR (€)</option>
                         <option value="GBP" data-symbol="£" data-timezone="Europe/London">🇬🇧 GBP (£)</option>
@@ -80,14 +101,14 @@
             </div>
 
             <!-- Status -->
-            <div id="status" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 hidden">
-                <p class="text-sm text-blue-800"></p>
+            <div id="status" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-6 hidden transition-all">
+                <p class="text-sm text-blue-800 dark:text-blue-300"></p>
             </div>
 
             <!-- People Section -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xl font-semibold text-gray-700">👥 Travelers</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">👥 Travelers</h2>
                     <button onclick="toggleAddPerson()" class="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm">
                         + Add Person
                     </button>
@@ -98,7 +119,7 @@
                         type="text" 
                         id="newPersonInput" 
                         placeholder="Enter name"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                         onkeypress="if(event.key==='Enter') addPerson()"
                     />
                     <button onclick="addPerson()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
@@ -110,57 +131,57 @@
             </div>
 
             <!-- Add/Edit Expense Form -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 class="font-semibold text-gray-700 mb-3" id="formTitle">Add New Expense</h3>
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6 transition-all">
+                <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3" id="formTitle">Add New Expense</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <input 
                         type="text" 
                         id="description" 
                         placeholder="Description (e.g., Hotel, Dinner)"
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     />
                     <input 
                         type="number" 
                         id="amount" 
                         placeholder="Amount"
                         step="0.01"
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     />
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Paid by:</label>
-                    <select id="paidBy" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Paid by:</label>
+                    <select id="paidBy" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all">
                         <option value="">Select person</option>
                     </select>
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Split type:</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Split type:</label>
                     <div class="flex gap-4 mb-3">
                         <label class="flex items-center">
                             <input type="radio" name="splitType" value="equal" checked onchange="toggleSplitType()" class="mr-2">
-                            <span class="text-sm">Split Equally</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Split Equally</span>
                         </label>
                         <label class="flex items-center">
                             <input type="radio" name="splitType" value="custom" onchange="toggleSplitType()" class="mr-2">
-                            <span class="text-sm">Custom Amounts</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Custom Amounts</span>
                         </label>
                     </div>
                 </div>
 
                 <!-- Equal Split -->
                 <div id="equalSplitSection" class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Split among:</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Split among:</label>
                     <div id="splitButtons" class="flex flex-wrap gap-2"></div>
                 </div>
 
                 <!-- Custom Split -->
                 <div id="customSplitSection" class="mb-4 hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom amounts for each person:</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom amounts for each person:</label>
                     <div id="customAmounts" class="space-y-2"></div>
-                    <p class="text-xs text-gray-500 mt-2">Total must equal the expense amount</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Total must equal the expense amount</p>
                 </div>
 
                 <div class="flex gap-2">
@@ -174,55 +195,55 @@
             </div>
 
             <!-- Date Filter -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-6" id="filterSection">
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6 transition-all" id="filterSection">
                 <div class="flex items-center gap-4 flex-wrap">
-                    <label class="text-sm font-medium text-gray-700">Filter by date:</label>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by date:</label>
                     <input 
                         type="date" 
                         id="filterDate" 
-                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                         onchange="applyDateFilter()"
                     />
                     <button onclick="clearDateFilter()" class="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-sm">
                         Clear Filter
                     </button>
-                    <span id="filterStatus" class="text-sm text-gray-600"></span>
+                    <span id="filterStatus" class="text-sm text-gray-600 dark:text-gray-400"></span>
                 </div>
             </div>
 
             <!-- Expenses List -->
             <div id="expensesSection" class="mb-6 hidden">
-                <h3 class="font-semibold text-gray-700 mb-3">Expenses</h3>
+                <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Expenses</h3>
                 <div id="expensesList" class="space-y-2"></div>
                 <div class="mt-3 text-right">
-                    <span id="totalExpenses" class="text-lg font-semibold text-gray-800"></span>
+                    <span id="totalExpenses" class="text-lg font-semibold text-gray-800 dark:text-white"></span>
                 </div>
             </div>
 
             <!-- Summary -->
             <div id="summarySection" class="hidden">
                 <!-- Individual Spending -->
-                <div class="bg-purple-50 rounded-lg p-4 mb-4">
-                    <h3 class="font-semibold text-gray-700 mb-3">💳 Individual Spending</h3>
+                <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 mb-4 transition-all">
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">💳 Individual Spending</h3>
                     <div id="spendingList" class="space-y-2"></div>
                 </div>
 
                 <!-- Current Balances -->
-                <div class="bg-indigo-50 rounded-lg p-4 mb-4">
-                    <h3 class="font-semibold text-gray-700 mb-3">💰 Current Balances</h3>
-                    <p class="text-xs text-gray-600 mb-2">Positive = owed to you | Negative = you owe</p>
+                <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4 mb-4 transition-all">
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">💰 Current Balances</h3>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Positive = owed to you | Negative = you owe</p>
                     <div id="balancesList" class="space-y-2"></div>
                 </div>
 
                 <!-- Settlement Plan -->
-                <div class="bg-green-50 rounded-lg p-4">
-                    <h3 class="font-semibold text-gray-700 mb-3">✅ Settlement Plan</h3>
+                <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 transition-all">
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">✅ Settlement Plan</h3>
                     <div id="settlementsList"></div>
                 </div>
             </div>
 
             <!-- Empty State -->
-            <div id="emptyState" class="text-center py-8 text-gray-500">
+            <div id="emptyState" class="text-center py-8 text-gray-500 dark:text-gray-400">
                 <div class="text-6xl mb-3">💰</div>
                 <p>No expenses added yet. Start by adding your first expense above!</p>
             </div>
@@ -256,6 +277,36 @@
         let currentTimezone = 'America/New_York';
         let editingExpenseId = null;
         let filteredDate = null;
+        let isDarkMode = false;
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            isDarkMode = true;
+            applyDarkMode();
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('darkMode', isDarkMode);
+            applyDarkMode();
+        }
+
+        function applyDarkMode() {
+            const body = document.getElementById('mainBody');
+            const icons = document.querySelectorAll('#darkModeIcon, #darkModeIconMain');
+            
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                body.classList.remove('bg-gradient-to-br', 'from-blue-50', 'to-indigo-100');
+                document.documentElement.classList.add('dark');
+                icons.forEach(icon => icon.textContent = '☀️');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('bg-gradient-to-br', 'from-blue-50', 'to-indigo-100');
+                document.documentElement.classList.remove('dark');
+                icons.forEach(icon => icon.textContent = '🌙');
+            }
+        }
 
         if (sessionStorage.getItem('loggedIn') === 'true') {
             showMainApp();
@@ -498,13 +549,13 @@
             const container = document.getElementById('customAmounts');
             container.innerHTML = people.map(p => `
                 <div class="flex items-center gap-2">
-                    <label class="w-32 text-sm font-medium text-gray-700">${p}:</label>
+                    <label class="w-32 text-sm font-medium text-gray-700 dark:text-gray-300">${p}:</label>
                     <input 
                         type="number" 
                         id="custom_${p}" 
                         placeholder="0.00"
                         step="0.01"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     />
                 </div>
             `).join('');
@@ -747,9 +798,9 @@
 
         function render() {
             document.getElementById('peopleList').innerHTML = people.map(p => `
-                <div class="flex items-center gap-2 bg-indigo-100 px-3 py-2 rounded-lg">
-                    <span class="text-indigo-800 font-medium">${p}</span>
-                    ${people.length > 2 ? `<button onclick="removePerson('${p}')" class="text-red-600 hover:text-red-800" title="Remove (requires password)">✕</button>` : ''}
+                <div class="flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900/50 px-3 py-2 rounded-lg transition-all">
+                    <span class="text-indigo-800 dark:text-indigo-200 font-medium">${p}</span>
+                    ${people.length > 2 ? `<button onclick="removePerson('${p}')" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Remove (requires password)">✕</button>` : ''}
                 </div>
             `).join('');
 
@@ -781,22 +832,22 @@
                     }
 
                     return `
-                        <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="flex items-center justify-between bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all">
                             <div class="flex-1">
-                                <div class="font-medium text-gray-800">${exp.description}</div>
-                                <div class="text-sm text-gray-600">
+                                <div class="font-medium text-gray-800 dark:text-white">${exp.description}</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-300">
                                     ${exp.currencySymbol || currencySymbol}${exp.amount.toFixed(2)} ${exp.currency || currentCurrency} paid by <span class="font-medium">${exp.paidBy}</span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Split: ${splitInfo}
                                 </div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
                                     📅 ${formatDateTime(exp.date)}
                                 </div>
                             </div>
                             <div class="flex gap-2 ml-4">
-                                <button onclick="editExpense(${exp.id})" class="text-blue-600 hover:text-blue-800" title="Edit">✏️</button>
-                                <button onclick="deleteExpense(${exp.id})" class="text-red-600 hover:text-red-800" title="Delete (requires password)">🗑️</button>
+                                <button onclick="editExpense(${exp.id})" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" title="Edit">✏️</button>
+                                <button onclick="deleteExpense(${exp.id})" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete (requires password)">🗑️</button>
                             </div>
                         </div>
                     `;
@@ -805,8 +856,8 @@
                 const spending = calculateIndividualSpending(displayExpenses);
                 document.getElementById('spendingList').innerHTML = people.map(p => `
                     <div class="flex justify-between items-center">
-                        <span class="font-medium text-gray-800">${p}</span>
-                        <span class="font-semibold text-purple-600">
+                        <span class="font-medium text-gray-800 dark:text-gray-200">${p}</span>
+                        <span class="font-semibold text-purple-600 dark:text-purple-400">
                             ${currencySymbol}${spending[p].toFixed(2)}
                         </span>
                     </div>
@@ -815,8 +866,8 @@
                 const balances = calculateBalances(displayExpenses);
                 document.getElementById('balancesList').innerHTML = people.map(p => `
                     <div class="flex justify-between items-center">
-                        <span class="font-medium text-gray-800">${p}</span>
-                        <span class="font-semibold ${balances[p] > 0.01 ? 'text-green-600' : balances[p] < -0.01 ? 'text-red-600' : 'text-gray-600'}">
+                        <span class="font-medium text-gray-800 dark:text-gray-200">${p}</span>
+                        <span class="font-semibold ${balances[p] > 0.01 ? 'text-green-600 dark:text-green-400' : balances[p] < -0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}">
                             ${balances[p] > 0.01 ? '+' : ''}${currencySymbol}${balances[p].toFixed(2)}
                         </span>
                     </div>
@@ -825,13 +876,13 @@
                 const settlements = calculateSettlements(displayExpenses);
                 document.getElementById('settlementsList').innerHTML = settlements.length > 0 
                     ? settlements.map(s => `
-                        <div class="flex items-center gap-2 text-gray-800">
+                        <div class="flex items-center gap-2 text-gray-800 dark:text-gray-200">
                             <span class="font-medium">${s.from}</span> pays 
                             <span class="font-medium">${s.to}</span>
-                            <span class="font-semibold text-green-600">${currencySymbol}${s.amount.toFixed(2)}</span>
+                            <span class="font-semibold text-green-600 dark:text-green-400">${currencySymbol}${s.amount.toFixed(2)}</span>
                         </div>
                     `).join('')
-                    : '<p class="text-gray-600">All settled up! 🎉</p>';
+                    : '<p class="text-gray-600 dark:text-gray-400">All settled up! 🎉</p>';
             } else {
                 document.getElementById('emptyState').classList.remove('hidden');
                 document.getElementById('expensesSection').classList.add('hidden');
