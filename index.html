@@ -56,12 +56,20 @@
           <p id="tripCurrencyLabel" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="syncStatus" class="tap flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300" title="Cloud sync status">
+            <span id="syncStatusIcon">⚪</span>
+            <span id="syncStatusText">Checking…</span>
+          </div>
           <button type="button" onclick="toggleDarkMode()" class="tap rounded-lg bg-gray-700 px-3 text-white hover:bg-gray-800">
             <span class="darkModeIcon">🌙</span>
           </button>
           <button type="button" onclick="refreshData()" class="tap rounded-lg bg-purple-600 px-3 text-sm text-white hover:bg-purple-700">🔄 Refresh</button>
           <button type="button" onclick="exportData()" class="tap rounded-lg bg-green-600 px-3 text-sm text-white hover:bg-green-700">📥 Export</button>
+          <label class="tap flex cursor-pointer items-center rounded-lg bg-teal-600 px-3 text-sm text-white hover:bg-teal-700">
+            📤 Import
+            <input id="importFile" type="file" accept=".json,application/json" onchange="importData(event)" class="hidden">
+          </label>
           <button type="button" onclick="logout()" class="tap rounded-lg bg-gray-600 px-3 text-sm text-white hover:bg-gray-700">🚪 Logout</button>
           <button type="button" onclick="clearAll()" class="tap rounded-lg bg-red-600 px-3 text-sm text-white hover:bg-red-700">🗑️ Clear All</button>
         </div>
@@ -75,6 +83,7 @@
           <div class="flex-1">
             <label for="currencySelect" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Trip currency</label>
             <select id="currencySelect" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option value="MYR" data-symbol="RM" data-timezone="Asia/Kuala_Lumpur">🇲🇾 MYR (RM)</option>
               <option value="USD" data-symbol="$" data-timezone="America/New_York">🇺🇸 USD ($)</option>
               <option value="EUR" data-symbol="€" data-timezone="Europe/Paris">🇪🇺 EUR (€)</option>
               <option value="GBP" data-symbol="£" data-timezone="Europe/London">🇬🇧 GBP (£)</option>
@@ -83,7 +92,6 @@
               <option value="AUD" data-symbol="A$" data-timezone="Australia/Sydney">🇦🇺 AUD (A$)</option>
               <option value="CAD" data-symbol="C$" data-timezone="America/Toronto">🇨🇦 CAD (C$)</option>
               <option value="SGD" data-symbol="S$" data-timezone="Asia/Singapore">🇸🇬 SGD (S$)</option>
-              <option value="MYR" data-symbol="RM" data-timezone="Asia/Kuala_Lumpur">🇲🇾 MYR (RM)</option>
               <option value="THB" data-symbol="฿" data-timezone="Asia/Bangkok">🇹🇭 THB (฿)</option>
               <option value="IDR" data-symbol="Rp" data-timezone="Asia/Jakarta" data-decimals="0">🇮🇩 IDR (Rp)</option>
               <option value="KRW" data-symbol="₩" data-timezone="Asia/Seoul" data-decimals="0">🇰🇷 KRW (₩)</option>
@@ -126,6 +134,19 @@
             class="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
           <input id="amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount"
             class="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+        </div>
+
+        <div class="mb-4">
+          <label for="category" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+          <select id="category" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <option value="Food">🍽️ Food</option>
+            <option value="Transport">🚕 Transport</option>
+            <option value="Hotel">🏨 Hotel</option>
+            <option value="Activities">🎟️ Activities</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Flight">✈️ Flight</option>
+            <option value="Other">📦 Other</option>
+          </select>
         </div>
 
         <div class="mb-4">
@@ -195,6 +216,21 @@
       <!-- FILTER -->
       <section id="filterSection" class="mb-6 hidden rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
         <div class="flex flex-wrap items-end gap-3">
+          <div class="min-w-[220px] flex-1">
+            <label for="searchExpense" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Search expenses</label>
+            <input id="searchExpense" type="search" placeholder="Description, category, payer..." oninput="applySearchFilter()"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label for="sortExpenses" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Sort</label>
+            <select id="sortExpenses" onchange="applySort()" class="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest">Highest amount</option>
+              <option value="lowest">Lowest amount</option>
+              <option value="category">Category</option>
+            </select>
+          </div>
           <div>
             <label for="filterDate" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Filter by date</label>
             <input id="filterDate" type="date" onchange="applyDateFilter()"
@@ -216,7 +252,7 @@
 
       <!-- SUMMARY -->
       <section id="summarySection" class="hidden">
-        <div class="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div class="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div class="rounded-xl bg-purple-50 p-4 dark:bg-purple-900/30">
             <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-200">💳 Individual Spending</h3>
             <div id="spendingList" class="space-y-2"></div>
@@ -226,10 +262,17 @@
             <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">Positive = owed to you · Negative = you owe</p>
             <div id="balancesList" class="space-y-2"></div>
           </div>
+          <div class="rounded-xl bg-amber-50 p-4 dark:bg-amber-900/30">
+            <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-200">📊 By Category</h3>
+            <div id="categoryList" class="space-y-2"></div>
+          </div>
         </div>
 
         <div class="rounded-xl bg-green-50 p-4 dark:bg-green-900/30">
-          <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-200">✅ Settlement Plan</h3>
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">✅ Settlement Plan</h3>
+            <button id="copyAllSettlements" type="button" onclick="copyAllSettlements()" class="tap hidden rounded-lg bg-green-700 px-3 text-sm text-white hover:bg-green-800">📋 Copy All</button>
+          </div>
           <div id="settlementsList" class="space-y-2"></div>
         </div>
       </section>
@@ -241,10 +284,30 @@
     </section>
   </main>
 
+  <!-- Undo Delete Toast -->
+  <div id="undoToast" class="fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-sm text-white shadow-2xl">
+    <span>Expense deleted</span>
+    <button type="button" onclick="undoDelete()" class="font-semibold text-yellow-300 hover:text-yellow-200">Undo</button>
+  </div>
+
   <!-- Receipt Photo Modal -->
-  <div id="photoModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Receipt photo">
-    <button type="button" onclick="closePhotoModal()" class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-2xl font-bold text-gray-800 shadow-lg hover:bg-white" aria-label="Close photo">✕</button>
-    <img id="modalPhoto" alt="Full receipt" class="max-h-[90vh] max-w-[95vw] rounded-xl object-contain shadow-2xl">
+  <div id="photoModal" class="fixed inset-0 z-50 hidden flex-col bg-black/90" role="dialog" aria-modal="true" aria-label="Receipt photo">
+    <div class="z-10 flex flex-wrap items-center justify-between gap-2 p-3 text-white">
+      <div id="photoModalTitle" class="max-w-[45vw] truncate text-sm font-medium">Receipt</div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="previousReceipt()" class="tap rounded-lg bg-white/15 px-3 hover:bg-white/25" title="Previous receipt">←</button>
+        <button type="button" onclick="zoomReceipt(-0.25)" class="tap rounded-lg bg-white/15 px-3 hover:bg-white/25" title="Zoom out">−</button>
+        <button type="button" onclick="resetReceiptView()" class="tap rounded-lg bg-white/15 px-3 text-sm hover:bg-white/25" title="Reset zoom">100%</button>
+        <button type="button" onclick="zoomReceipt(0.25)" class="tap rounded-lg bg-white/15 px-3 hover:bg-white/25" title="Zoom in">＋</button>
+        <button type="button" onclick="rotateReceipt()" class="tap rounded-lg bg-white/15 px-3 hover:bg-white/25" title="Rotate">↻</button>
+        <button type="button" onclick="nextReceipt()" class="tap rounded-lg bg-white/15 px-3 hover:bg-white/25" title="Next receipt">→</button>
+        <button type="button" onclick="closePhotoModal()" class="tap rounded-lg bg-white/90 px-3 text-xl font-bold text-gray-800 hover:bg-white" aria-label="Close photo">✕</button>
+      </div>
+    </div>
+    <div id="photoViewport" class="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
+      <img id="modalPhoto" alt="Full receipt" draggable="false" class="max-h-full max-w-full select-none rounded-xl object-contain shadow-2xl">
+    </div>
+    <div class="pb-3 text-center text-xs text-white/70">Mouse wheel / buttons to zoom · swipe left/right on mobile for next receipt</div>
   </div>
 
 <script>
@@ -281,6 +344,17 @@ let currencySymbol = '$';
 let currentTimezone = 'America/New_York';
 let currencyDecimals = 2;
 let currencyLocked = false;
+let searchTerm = '';
+let expenseSort = 'newest';
+let receiptList = [];
+let receiptIndex = -1;
+let receiptZoom = 1;
+let receiptRotation = 0;
+let receiptTouchStartX = null;
+let lastDeletedExpense = null;
+let undoDeleteTimer = null;
+let pendingWrites = 0;
+let lastSyncError = null;
 
 let currentPhotoUrl = null;
 let isUploadingPhoto = false;
@@ -478,12 +552,67 @@ function removePhoto() {
   $('uploadStatus').textContent = '';
 }
 
-function viewFullPhoto(url) {
+function rebuildReceiptList() {
+  receiptList = getFilteredExpenses().filter(exp => exp.photoUrl);
+}
+
+function viewFullPhoto(url, expenseId = null) {
   if (!url) return;
-  $('modalPhoto').src = url;
+  rebuildReceiptList();
+  receiptIndex = expenseId !== null
+    ? receiptList.findIndex(exp => getExpenseId(exp) === String(expenseId))
+    : receiptList.findIndex(exp => exp.photoUrl === url);
+  if (receiptIndex < 0) {
+    receiptList = [{ id: 'current', description: 'Receipt', photoUrl: url }];
+    receiptIndex = 0;
+  }
+  showCurrentReceipt();
   $('photoModal').classList.remove('hidden');
   $('photoModal').classList.add('flex');
   document.body.style.overflow = 'hidden';
+}
+
+function showCurrentReceipt() {
+  const exp = receiptList[receiptIndex];
+  if (!exp) return;
+  receiptZoom = 1;
+  receiptRotation = 0;
+  $('modalPhoto').src = exp.photoUrl;
+  $('photoModalTitle').textContent = exp.description || 'Receipt';
+  updateReceiptTransform();
+}
+
+function updateReceiptTransform() {
+  $('modalPhoto').style.transform = `scale(${receiptZoom}) rotate(${receiptRotation}deg)`;
+  $('modalPhoto').style.transformOrigin = 'center center';
+}
+
+function zoomReceipt(delta) {
+  receiptZoom = Math.min(4, Math.max(0.5, receiptZoom + delta));
+  updateReceiptTransform();
+}
+
+function rotateReceipt() {
+  receiptRotation = (receiptRotation + 90) % 360;
+  updateReceiptTransform();
+}
+
+function resetReceiptView() {
+  receiptZoom = 1;
+  receiptRotation = 0;
+  updateReceiptTransform();
+}
+
+function previousReceipt() {
+  if (!receiptList.length) return;
+  receiptIndex = (receiptIndex - 1 + receiptList.length) % receiptList.length;
+  showCurrentReceipt();
+}
+
+function nextReceipt() {
+  if (!receiptList.length) return;
+  receiptIndex = (receiptIndex + 1) % receiptList.length;
+  showCurrentReceipt();
 }
 
 function closePhotoModal() {
@@ -491,19 +620,39 @@ function closePhotoModal() {
   $('photoModal').classList.remove('flex');
   $('modalPhoto').src = '';
   document.body.style.overflow = '';
+  receiptIndex = -1;
 }
 
-// Close when clicking the dark background, but not the image itself.
 $('photoModal').addEventListener('click', event => {
-  if (event.target === $('photoModal')) closePhotoModal();
+  if (event.target === $('photoModal') || event.target === $('photoViewport')) closePhotoModal();
 });
 
-// Escape key closes the popup on desktop.
+$('photoViewport').addEventListener('wheel', event => {
+  if ($('photoModal').classList.contains('hidden')) return;
+  event.preventDefault();
+  zoomReceipt(event.deltaY < 0 ? 0.15 : -0.15);
+}, { passive: false });
+
+$('photoViewport').addEventListener('touchstart', event => {
+  if (event.touches.length === 1) receiptTouchStartX = event.touches[0].clientX;
+}, { passive: true });
+
+$('photoViewport').addEventListener('touchend', event => {
+  if (receiptTouchStartX === null || !event.changedTouches.length) return;
+  const dx = event.changedTouches[0].clientX - receiptTouchStartX;
+  receiptTouchStartX = null;
+  if (Math.abs(dx) > 60) dx < 0 ? nextReceipt() : previousReceipt();
+}, { passive: true });
+
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && !$('photoModal').classList.contains('hidden')) {
-    closePhotoModal();
-  }
+  if ($('photoModal').classList.contains('hidden')) return;
+  if (event.key === 'Escape') closePhotoModal();
+  if (event.key === 'ArrowLeft') previousReceipt();
+  if (event.key === 'ArrowRight') nextReceipt();
+  if (event.key === '+' || event.key === '=') zoomReceipt(0.25);
+  if (event.key === '-') zoomReceipt(-0.25);
 });
+
 
 function restorePhoto(photoUrl) {
   currentPhotoUrl = photoUrl || null;
@@ -597,6 +746,17 @@ async function saveTripCurrency() {
   }
 
   const meta = getCurrencyMeta($('currencySelect').value);
+
+  if (!navigator.onLine) {
+    lastSyncError = 'Offline — currency change was not saved.';
+    updateConnectionStatus();
+    return showStatus('❌ You are offline. Currency was not changed.', 'error');
+  }
+
+  pendingWrites++;
+  lastSyncError = null;
+  updateConnectionStatus();
+
   try {
     await db.collection('travel').doc('settings').set({
       currency: meta.currency,
@@ -606,11 +766,16 @@ async function saveTripCurrency() {
     }, { merge: true });
     setCurrencyState(meta);
     render();
+    lastSyncError = null;
     showStatus(`✅ Trip currency set to ${meta.currency}.`);
     setTimeout(hideStatus, 2200);
   } catch (error) {
     console.error(error);
+    lastSyncError = `Currency save failed: ${error.message || 'unknown error'}`;
     showStatus('❌ Could not save currency.', 'error');
+  } finally {
+    pendingWrites = Math.max(0, pendingWrites - 1);
+    updateConnectionStatus();
   }
 }
 
@@ -624,8 +789,73 @@ function updateCurrencyLock() {
     : 'One currency is used for the entire trip. Once expenses exist, changing it is blocked to prevent incorrect totals.';
 }
 
+/* ---------------- Connection / sync status ---------------- */
+function setSyncStatus(state, detail = '') {
+  const box = $('syncStatus');
+  const icon = $('syncStatusIcon');
+  const label = $('syncStatusText');
+  if (!box || !icon || !label) return;
+
+  box.className = 'tap flex items-center gap-2 rounded-lg border px-3 text-sm font-medium';
+
+  if (state === 'saving') {
+    icon.textContent = '🟡';
+    label.textContent = 'Saving…';
+    box.classList.add('border-amber-200','bg-amber-50','text-amber-700','dark:border-amber-800','dark:bg-amber-900/30','dark:text-amber-300');
+  } else if (state === 'offline') {
+    icon.textContent = '🔴';
+    label.textContent = 'Offline';
+    box.classList.add('border-red-200','bg-red-50','text-red-700','dark:border-red-800','dark:bg-red-900/30','dark:text-red-300');
+  } else if (state === 'error') {
+    icon.textContent = '🔴';
+    label.textContent = 'Not saved';
+    box.classList.add('border-red-200','bg-red-50','text-red-700','dark:border-red-800','dark:bg-red-900/30','dark:text-red-300');
+  } else {
+    icon.textContent = '🟢';
+    label.textContent = 'Synced';
+    box.classList.add('border-green-200','bg-green-50','text-green-700','dark:border-green-800','dark:bg-green-900/30','dark:text-green-300');
+  }
+
+  box.title = detail || label.textContent;
+}
+
+function updateConnectionStatus() {
+  if (!navigator.onLine) {
+    setSyncStatus('offline', 'No internet connection. New changes will not be confirmed as saved.');
+    return;
+  }
+  if (pendingWrites > 0) {
+    setSyncStatus('saving', 'Saving changes to Firestore…');
+    return;
+  }
+  if (lastSyncError) {
+    setSyncStatus('error', lastSyncError);
+    return;
+  }
+  setSyncStatus('synced', 'All confirmed changes are saved to Firestore.');
+}
+
+window.addEventListener('online', () => {
+  lastSyncError = null;
+  updateConnectionStatus();
+  showStatus('🌐 Internet connection restored.');
+  setTimeout(hideStatus, 1800);
+});
+
+window.addEventListener('offline', () => {
+  updateConnectionStatus();
+  showStatus('❌ You are offline. Changes cannot be confirmed as saved.', 'error');
+});
+
 /* ---------------- Persistence ---------------- */
 async function loadData() {
+  if (!navigator.onLine) {
+    lastSyncError = 'Offline — cloud data could not be refreshed.';
+    updateConnectionStatus();
+  } else {
+    setSyncStatus('saving', 'Loading latest trip data…');
+  }
+
   try {
     await loadCurrencyPreference();
 
@@ -650,15 +880,28 @@ async function loadData() {
     }));
 
     splitAmong = splitAmong.filter(p => people.includes(p));
+    lastSyncError = null;
     render();
   } catch (error) {
     console.error('Load error:', error);
+    lastSyncError = navigator.onLine
+      ? `Refresh failed: ${error.message || 'unknown error'}`
+      : 'Offline — cloud data could not be refreshed.';
     showStatus('❌ Could not load trip data. Check Firebase rules/connection.', 'error');
+  } finally {
+    updateConnectionStatus();
   }
 }
 
 async function saveData(requireAdminPassword = false) {
   let adminPassword = '';
+
+  if (!navigator.onLine) {
+    lastSyncError = 'Offline — changes were not saved.';
+    updateConnectionStatus();
+    showStatus('❌ You are offline. This change was not saved.', 'error');
+    return false;
+  }
 
   if (requireAdminPassword) {
     adminPassword = prompt('🔒 Enter admin password to proceed:') || '';
@@ -668,20 +911,31 @@ async function saveData(requireAdminPassword = false) {
     }
   }
 
+  pendingWrites++;
+  lastSyncError = null;
+  updateConnectionStatus();
+
   try {
-    // Keep the existing _adminPassword field for compatibility with your current Firestore rules.
-    // For stronger security, replace this scheme with Firebase Authentication + proper rules.
     await Promise.all([
       db.collection('travel').doc('people').set({ list: people, _adminPassword: adminPassword }),
       db.collection('travel').doc('expenses').set({ list: expenses, _adminPassword: adminPassword })
     ]);
+
+    lastSyncError = null;
     return true;
   } catch (error) {
     console.error('Save error:', error);
+    lastSyncError = error.code === 'permission-denied'
+      ? 'Permission denied — latest change was not saved.'
+      : `Save failed: ${error.message || 'unknown error'}`;
+
     showStatus(error.code === 'permission-denied'
       ? '❌ Permission denied. Check the admin password or Firebase rules.'
       : `❌ Could not save: ${error.message}`, 'error');
     return false;
+  } finally {
+    pendingWrites = Math.max(0, pendingWrites - 1);
+    updateConnectionStatus();
   }
 }
 
@@ -833,6 +1087,7 @@ function editExpense(id) {
   $('description').value = expense.description || '';
   $('amount').value = expense.amount;
   $('paidBy').value = expense.paidBy || '';
+  $('category').value = CATEGORY_ICONS[expense.category] ? expense.category : 'Other';
   $('saveButton').textContent = '💾 Save Changes';
   $('cancelButton').classList.remove('hidden');
   restorePhoto(expense.photoUrl || null);
@@ -858,6 +1113,7 @@ function cancelEdit() {
   $('description').value = '';
   $('amount').value = '';
   $('paidBy').value = '';
+  $('category').value = 'Other';
   $('saveButton').textContent = '+ Add Expense';
   $('cancelButton').classList.add('hidden');
   removePhoto();
@@ -890,6 +1146,7 @@ async function saveExpense() {
     currency: currentCurrency,
     currencySymbol,
     timezone: currentTimezone,
+    category: $('category').value || 'Other',
     photoUrl: currentPhotoUrl || null
   };
 
@@ -957,20 +1214,56 @@ async function deleteExpense(id) {
   if (!expense) return;
   if (!confirm(`Delete "${expense.description}" (${formatMoney(expense.amount)})?`)) return;
 
+  const index = expenses.findIndex(e => getExpenseId(e) === String(id));
   const oldExpenses = [...expenses];
-  expenses = expenses.filter(e => getExpenseId(e) !== String(id));
+  lastDeletedExpense = { expense: { ...expense }, index };
+
+  expenses.splice(index, 1);
 
   const success = await saveData(true);
   if (!success) {
     expenses = oldExpenses;
+    lastDeletedExpense = null;
     render();
     return;
   }
 
   if (String(editingExpenseId) === String(id)) cancelEdit();
   render();
-  showStatus('✅ Expense deleted.');
-  setTimeout(hideStatus, 2000);
+  showUndoToast();
+}
+
+function showUndoToast() {
+  clearTimeout(undoDeleteTimer);
+  $('undoToast').classList.remove('hidden');
+  $('undoToast').classList.add('flex');
+  undoDeleteTimer = setTimeout(() => {
+    $('undoToast').classList.add('hidden');
+    $('undoToast').classList.remove('flex');
+    lastDeletedExpense = null;
+  }, 8000);
+}
+
+async function undoDelete() {
+  if (!lastDeletedExpense) return;
+  clearTimeout(undoDeleteTimer);
+
+  const { expense, index } = lastDeletedExpense;
+  expenses.splice(Math.min(index, expenses.length), 0, expense);
+
+  const success = await saveData(false);
+  if (!success) {
+    expenses = expenses.filter(e => getExpenseId(e) !== getExpenseId(expense));
+    render();
+    return;
+  }
+
+  lastDeletedExpense = null;
+  $('undoToast').classList.add('hidden');
+  $('undoToast').classList.remove('flex');
+  render();
+  showStatus('✅ Expense restored.');
+  setTimeout(hideStatus, 1800);
 }
 
 /* ---------------- Calculations ---------------- */
@@ -1068,7 +1361,148 @@ function calculateSettlements(expensesList = expenses) {
   return settlements;
 }
 
+/* ---------------- Categories / backup / clipboard ---------------- */
+const CATEGORY_ICONS = {
+  Food: '🍽️',
+  Transport: '🚕',
+  Hotel: '🏨',
+  Activities: '🎟️',
+  Shopping: '🛍️',
+  Flight: '✈️',
+  Other: '📦'
+};
+
+function categoryLabel(category) {
+  const value = CATEGORY_ICONS[category] ? category : 'Other';
+  return `${CATEGORY_ICONS[value]} ${value}`;
+}
+
+function calculateCategoryTotals(expensesList = expenses) {
+  const totals = {};
+  expensesList.forEach(exp => {
+    const category = CATEGORY_ICONS[exp.category] ? exp.category : 'Other';
+    totals[category] = (totals[category] || 0) + (moneyToMinor(exp.amount) || 0);
+  });
+  return totals;
+}
+
+async function copyText(text, successMessage = 'Copied.') {
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus(`✅ ${successMessage}`);
+    setTimeout(hideStatus, 1800);
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+    showStatus(`✅ ${successMessage}`);
+    setTimeout(hideStatus, 1800);
+  }
+}
+
+function copySettlement(from, to, amountMinor) {
+  copyText(`${from} → ${to}: ${formatMoneyMinor(amountMinor)}`, 'Settlement copied.');
+}
+
+function copyAllSettlements() {
+  const settlements = calculateSettlements(getFilteredExpenses());
+  if (!settlements.length) return;
+  const text = settlements.map(s => `${s.from} → ${s.to}: ${formatMoneyMinor(s.amount)}`).join('\n');
+  copyText(text, 'All settlements copied.');
+}
+
+async function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const raw = await file.text();
+    const data = JSON.parse(raw);
+
+    if (!Array.isArray(data.people) || !Array.isArray(data.expenses)) {
+      throw new Error('This does not look like a valid Travel Expense Splitter backup.');
+    }
+    if (data.people.length < 2 || data.people.some(p => typeof p !== 'string' || !p.trim())) {
+      throw new Error('Backup contains invalid traveller data.');
+    }
+
+    const backupCurrency = data.currency || currentCurrency;
+    const meta = getCurrencyMeta(backupCurrency);
+
+    if (expenses.length && backupCurrency !== currentCurrency) {
+      throw new Error(`Backup uses ${backupCurrency}, but this trip is locked to ${currentCurrency}. Clear the trip before importing a different currency.`);
+    }
+
+    if (!confirm(`Import this backup?\n\nTravellers: ${data.people.length}\nExpenses: ${data.expenses.length}\nCurrency: ${backupCurrency}\n\nCurrent trip data will be replaced.`)) {
+      event.target.value = '';
+      return;
+    }
+
+    const oldPeople = [...people];
+    const oldExpenses = [...expenses];
+    const oldCurrency = { currency: currentCurrency, symbol: currencySymbol, timezone: currentTimezone, decimals: currencyDecimals };
+
+    people = data.people.map(p => p.trim());
+    expenses = data.expenses.map(exp => ({
+      ...exp,
+      id: exp.id ?? makeId(),
+      date: exp.date || new Date().toISOString(),
+      category: CATEGORY_ICONS[exp.category] ? exp.category : 'Other'
+    }));
+
+    setCurrencyState({
+      currency: backupCurrency,
+      symbol: data.currencySymbol || meta.symbol,
+      timezone: data.timezone || meta.timezone,
+      decimals: Number.isInteger(data.currencyDecimals) ? data.currencyDecimals : meta.decimals
+    });
+
+    const saved = await saveData(true);
+    if (!saved) {
+      people = oldPeople;
+      expenses = oldExpenses;
+      setCurrencyState(oldCurrency);
+      render();
+      return;
+    }
+
+    await db.collection('travel').doc('settings').set({
+      currency: currentCurrency,
+      currencySymbol,
+      timezone: currentTimezone,
+      currencyDecimals
+    }, { merge: true });
+
+    cancelEdit();
+    clearDateFilter();
+    $('searchExpense').value = '';
+    searchTerm = '';
+    render();
+    showStatus('✅ Backup imported successfully.');
+  } catch (error) {
+    console.error(error);
+    showStatus(`❌ Import failed: ${error.message}`, 'error');
+  } finally {
+    event.target.value = '';
+  }
+}
+
 /* ---------------- Filter ---------------- */
+function applySort() {
+  expenseSort = $('sortExpenses').value || 'newest';
+  render();
+}
+
+function applySearchFilter() {
+  searchTerm = $('searchExpense').value.trim().toLocaleLowerCase();
+  render();
+}
+
 function applyDateFilter() {
   filteredDate = $('filterDate').value || null;
   $('filterStatus').textContent = filteredDate ? `Showing ${filteredDate}` : '';
@@ -1083,8 +1517,30 @@ function clearDateFilter() {
 }
 
 function getFilteredExpenses() {
-  if (!filteredDate) return expenses;
-  return expenses.filter(exp => getDateOnly(exp.date) === filteredDate);
+  const filtered = expenses.filter(exp => {
+    const dateMatches = !filteredDate || getDateOnly(exp.date) === filteredDate;
+    if (!dateMatches) return false;
+
+    if (!searchTerm) return true;
+    const haystack = [
+      exp.description,
+      exp.paidBy,
+      exp.category || 'Other',
+      ...(exp.splitAmong || [])
+    ].join(' ').toLocaleLowerCase();
+    return haystack.includes(searchTerm);
+  });
+
+  return [...filtered].sort((a, b) => {
+    if (expenseSort === 'oldest') return new Date(a.date) - new Date(b.date);
+    if (expenseSort === 'highest') return (moneyToMinor(b.amount) || 0) - (moneyToMinor(a.amount) || 0);
+    if (expenseSort === 'lowest') return (moneyToMinor(a.amount) || 0) - (moneyToMinor(b.amount) || 0);
+    if (expenseSort === 'category') {
+      const categoryCompare = (a.category || 'Other').localeCompare(b.category || 'Other');
+      return categoryCompare || new Date(b.date) - new Date(a.date);
+    }
+    return new Date(b.date) - new Date(a.date);
+  });
 }
 
 /* ---------------- Rendering ---------------- */
@@ -1125,79 +1581,144 @@ function renderExpenses(displayExpenses) {
   const list = $('expensesList');
   list.replaceChildren();
 
-  displayExpenses.forEach(exp => {
-    const totalMinor = moneyToMinor(exp.amount) ?? 0;
-    let splitText = '';
+  if (!displayExpenses.length) {
+    const empty = document.createElement('div');
+    empty.className = 'rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-gray-600 dark:text-gray-400';
+    empty.textContent = 'No expenses match the current filters.';
+    list.appendChild(empty);
+    return;
+  }
 
-    if (exp.customAmounts) {
-      splitText = Object.entries(exp.customAmounts)
-        .map(([person, amount]) => `${person}: ${formatMoney(amount)}`)
-        .join(' · ');
-    } else {
-      const members = exp.splitAmong || [];
-      const shares = equalSharesMinor(totalMinor, members);
-      splitText = members.map(person => `${person}: ${formatMoneyMinor(shares[person] || 0)}`).join(' · ');
+  // Date grouping remains useful for chronological sorts. Amount/category sorts use a flat list
+  // so the selected sort order is not broken by regrouping.
+  const groupByDate = expenseSort === 'newest' || expenseSort === 'oldest';
+  const groups = [];
+
+  if (groupByDate) {
+    displayExpenses.forEach(exp => {
+      const key = getDateOnly(exp.date) || 'Unknown';
+      let group = groups.find(g => g.key === key);
+      if (!group) {
+        group = { key, expenses: [] };
+        groups.push(group);
+      }
+      group.expenses.push(exp);
+    });
+  } else {
+    groups.push({ key: null, expenses: displayExpenses });
+  }
+
+  groups.forEach(group => {
+    if (group.key) {
+      const groupTotal = group.expenses.reduce((sum, exp) => sum + (moneyToMinor(exp.amount) || 0), 0);
+      const heading = document.createElement('div');
+      heading.className = 'sticky top-0 z-10 mt-4 flex items-center justify-between rounded-lg bg-gray-100/95 px-3 py-2 backdrop-blur dark:bg-gray-800/95';
+      const dateText = document.createElement('span');
+      dateText.className = 'font-semibold text-gray-800 dark:text-gray-200';
+      try {
+        dateText.textContent = new Intl.DateTimeFormat('en-GB', {
+          timeZone: currentTimezone, weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+        }).format(new Date(`${group.key}T12:00:00`));
+      } catch {
+        dateText.textContent = group.key;
+      }
+      const totalText = document.createElement('span');
+      totalText.className = 'text-sm font-bold text-gray-700 dark:text-gray-300';
+      totalText.textContent = formatMoneyMinor(groupTotal);
+      heading.append(dateText, totalText);
+      list.appendChild(heading);
     }
 
-    const card = document.createElement('article');
-    card.className = 'flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700 sm:flex-row sm:items-center sm:justify-between';
+    group.expenses.forEach(exp => {
+      const totalMinor = moneyToMinor(exp.amount) ?? 0;
+      let splitText = '';
 
-    const info = document.createElement('div');
-    info.className = 'min-w-0 flex-1';
+      if (exp.customAmounts) {
+        splitText = Object.entries(exp.customAmounts)
+          .map(([person, amount]) => `${person}: ${formatMoney(amount)}`)
+          .join(' · ');
+      } else {
+        const members = exp.splitAmong || [];
+        const shares = equalSharesMinor(totalMinor, members);
+        splitText = members.map(person => `${person}: ${formatMoneyMinor(shares[person] || 0)}`).join(' · ');
+      }
 
-    const title = document.createElement('div');
-    title.className = 'font-medium text-gray-900 dark:text-white';
-    title.textContent = exp.description;
+      const card = document.createElement('article');
+      card.className = 'flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700 sm:flex-row sm:items-center sm:justify-between';
 
-    const paid = document.createElement('div');
-    paid.className = 'mt-1 text-sm text-gray-600 dark:text-gray-300';
-    paid.textContent = `${formatMoney(exp.amount)} paid by ${exp.paidBy}`;
+      const info = document.createElement('div');
+      info.className = 'min-w-0 flex-1';
 
-    const split = document.createElement('div');
-    split.className = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
-    split.textContent = `Split: ${splitText}`;
+      const titleRow = document.createElement('div');
+      titleRow.className = 'flex items-center gap-2';
 
-    const date = document.createElement('div');
-    date.className = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
-    date.textContent = `📅 ${formatDateTime(exp.date)}`;
+      const title = document.createElement('div');
+      title.className = 'font-medium text-gray-900 dark:text-white';
+      title.textContent = exp.description;
+      titleRow.appendChild(title);
 
-    if (exp.photoUrl) {
-      const receiptRow = document.createElement('div');
-      receiptRow.className = 'mt-3';
+      if (exp.photoUrl) {
+        const indicator = document.createElement('span');
+        indicator.textContent = '📷';
+        indicator.title = 'Receipt attached';
+        indicator.className = 'text-sm';
+        titleRow.appendChild(indicator);
+      }
 
-      const receipt = document.createElement('img');
-      receipt.src = exp.photoUrl;
-      receipt.alt = 'Receipt photo';
-      receipt.loading = 'lazy';
-      receipt.className = 'h-20 w-20 cursor-pointer rounded-lg border border-gray-200 object-cover shadow-sm dark:border-gray-600';
-      receipt.title = 'Click to view full receipt';
-      receipt.addEventListener('click', () => viewFullPhoto(exp.photoUrl));
+      const paid = document.createElement('div');
+      paid.className = 'mt-1 text-sm text-gray-600 dark:text-gray-300';
+      paid.textContent = `${formatMoney(exp.amount)} paid by ${exp.paidBy}`;
 
-      receiptRow.appendChild(receipt);
-      info.append(title, paid, split, date, receiptRow);
-    } else {
-      info.append(title, paid, split, date);
-    }
+      const category = document.createElement('div');
+      category.className = 'mt-1 text-xs font-medium text-indigo-600 dark:text-indigo-300';
+      category.textContent = categoryLabel(exp.category);
 
-    const actions = document.createElement('div');
-    actions.className = 'flex shrink-0 gap-2';
+      const split = document.createElement('div');
+      split.className = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
+      split.textContent = `Split: ${splitText}`;
 
-    const edit = document.createElement('button');
-    edit.type = 'button';
-    edit.textContent = '✏️ Edit';
-    edit.className = 'tap rounded-lg bg-blue-50 px-3 text-sm text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300';
-    edit.addEventListener('click', () => editExpense(getExpenseId(exp)));
+      const date = document.createElement('div');
+      date.className = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
+      date.textContent = `📅 ${formatDateTime(exp.date)}`;
 
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.textContent = '🗑️';
-    del.title = 'Delete expense';
-    del.className = 'tap rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300';
-    del.addEventListener('click', () => deleteExpense(getExpenseId(exp)));
+      info.append(titleRow, paid, category, split, date);
 
-    actions.append(edit, del);
-    card.append(info, actions);
-    list.appendChild(card);
+      if (exp.photoUrl) {
+        const receiptRow = document.createElement('div');
+        receiptRow.className = 'mt-3';
+
+        const receipt = document.createElement('img');
+        receipt.src = exp.photoUrl;
+        receipt.alt = 'Receipt photo';
+        receipt.loading = 'lazy';
+        receipt.className = 'h-20 w-20 cursor-pointer rounded-lg border border-gray-200 object-cover shadow-sm transition hover:scale-105 dark:border-gray-600';
+        receipt.title = 'Click to view receipt';
+        receipt.addEventListener('click', () => viewFullPhoto(exp.photoUrl, getExpenseId(exp)));
+
+        receiptRow.appendChild(receipt);
+        info.appendChild(receiptRow);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'flex shrink-0 gap-2';
+
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.textContent = '✏️ Edit';
+      edit.className = 'tap rounded-lg bg-blue-50 px-3 text-sm text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300';
+      edit.addEventListener('click', () => editExpense(getExpenseId(exp)));
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '🗑️';
+      del.title = 'Delete expense';
+      del.className = 'tap rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300';
+      del.addEventListener('click', () => deleteExpense(getExpenseId(exp)));
+
+      actions.append(edit, del);
+      card.append(info, actions);
+      list.appendChild(card);
+    });
   });
 }
 
@@ -1224,17 +1745,49 @@ function renderSummary(displayExpenses) {
       </div>`;
   }).join('');
 
+  const categoryTotals = calculateCategoryTotals(displayExpenses);
+  const categoryEntries = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  $('categoryList').innerHTML = categoryEntries.length
+    ? categoryEntries.map(([category, total]) => `
+        <div class="flex justify-between gap-3">
+          <span class="font-medium text-gray-800 dark:text-gray-200">${escapeHTML(categoryLabel(category))}</span>
+          <span class="font-semibold text-amber-700 dark:text-amber-300">${escapeHTML(formatMoneyMinor(total))}</span>
+        </div>`).join('')
+    : '<p class="text-gray-500 dark:text-gray-400">No matching expenses.</p>';
+
+  $('copyAllSettlements').classList.toggle('hidden', !settlements.length);
+
   if (!settlements.length) {
     $('settlementsList').innerHTML = '<p class="text-gray-600 dark:text-gray-400">All settled up! 🎉</p>';
   } else {
-    $('settlementsList').innerHTML = settlements.map(s => `
-      <div class="rounded-lg bg-white/70 p-3 text-gray-800 dark:bg-gray-800/40 dark:text-gray-200">
-        <span class="font-medium">${escapeHTML(s.from)}</span>
-        pays
-        <span class="font-medium">${escapeHTML(s.to)}</span>
-        <span class="ml-1 font-bold text-green-700 dark:text-green-300">${escapeHTML(formatMoneyMinor(s.amount))}</span>
-      </div>
-    `).join('');
+    const list = $('settlementsList');
+    list.replaceChildren();
+    settlements.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 p-3 text-gray-800 dark:bg-gray-800/40 dark:text-gray-200';
+
+      const wording = document.createElement('div');
+      const from = document.createElement('span');
+      from.className = 'font-medium';
+      from.textContent = s.from;
+      const middle = document.createTextNode(' pays ');
+      const to = document.createElement('span');
+      to.className = 'font-medium';
+      to.textContent = s.to;
+      const amount = document.createElement('span');
+      amount.className = 'ml-1 font-bold text-green-700 dark:text-green-300';
+      amount.textContent = formatMoneyMinor(s.amount);
+      wording.append(from, middle, to, amount);
+
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.textContent = '📋 Copy';
+      copy.className = 'tap rounded-lg bg-green-700 px-3 text-xs text-white hover:bg-green-800';
+      copy.addEventListener('click', () => copySettlement(s.from, s.to, s.amount));
+
+      row.append(wording, copy);
+      list.appendChild(row);
+    });
   }
 }
 
@@ -1264,15 +1817,23 @@ function render() {
 
 /* ---------------- Other actions ---------------- */
 async function refreshData() {
+  if (!navigator.onLine) {
+    updateConnectionStatus();
+    return showStatus('❌ You are offline. Cannot refresh cloud data.', 'error');
+  }
+
   showStatus('🔄 Refreshing...');
   await loadData();
-  showStatus('✅ Data refreshed.');
-  setTimeout(hideStatus, 1500);
+
+  if (!lastSyncError) {
+    showStatus('✅ Data refreshed.');
+    setTimeout(hideStatus, 1500);
+  }
 }
 
 function exportData() {
   const data = {
-    version: 2,
+    version: 3,
     people,
     expenses,
     currency: currentCurrency,
@@ -1322,6 +1883,7 @@ async function clearAll() {
 /* ---------------- Start ---------------- */
 applyDarkMode();
 setCurrencyState(getCurrencyMeta('USD'));
+updateConnectionStatus();
 
 if (sessionStorage.getItem('loggedIn') === 'true') {
   showMainApp();
